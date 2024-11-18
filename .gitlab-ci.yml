@@ -1,0 +1,58 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+stages:
+  - test
+  - build
+  - deploy
+
+test:
+  stage: test
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - docker info
+  script:
+    - docker build -f run/Test.Dockerfile -t ${CI_REGISTRY_IMAGE}/test:${CI_COMMIT_SHA} .
+    - docker image tag ${CI_REGISTRY_IMAGE}/test:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/test:latest
+
+    - cd ./run/
+    - docker-compose -f Test.docker-compose.yml up --abort-on-container-exit
+    - cd ./../
+
+build:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+    - docker build -f run/App.Dockerfile -t ${CI_REGISTRY_IMAGE}/app:${CI_COMMIT_SHA} .
+    - docker image tag ${CI_REGISTRY_IMAGE}/app:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/app:latest
+    - docker push ${CI_REGISTRY_IMAGE}/app:${CI_COMMIT_SHA}
+    - docker push ${CI_REGISTRY_IMAGE}/app:latest
+  only:
+    - master
+
+deploy:
+  stage: deploy
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - apk add sshpass
+    - mkdir -p ~/.ssh/
+    - touch ~/.ssh/known_hosts
+    - ssh-keyscan gast.exnet.su >> ~/.ssh/known_hosts
+  script:
+    - sshpass -v -p ${DEPLOY_HOST_PASSWORD} scp -v ./run/App.docker-compose.yml security_lab_5@gast.exnet.su:/home/security_lab_5/website/App.docker-compose.yml
+    - sshpass -v -p ${DEPLOY_HOST_PASSWORD} scp -v ./run/configs/prometheus.yml security_lab_5@gast.exnet.su:/home/security_lab_5/website/configs/prometheus.yml
+    - sshpass -v -p ${DEPLOY_HOST_PASSWORD} scp -v ./run/configs/logstash.conf security_lab_5@gast.exnet.su:/home/security_lab_5/website/configs/logstash.conf
+    - sshpass -v -p ${DEPLOY_HOST_PASSWORD} scp -v ./run/configs/nginx.conf security_lab_5@gast.exnet.su:/home/security_lab_5/website/configs/nginx.conf
+    - sshpass -v -p ${DEPLOY_HOST_PASSWORD} scp -v ./run/configs/redis.conf security_lab_5@gast.exnet.su:/home/security_lab_5/website/configs/redis.conf
+    
+    - sshpass -v -p ${DEPLOY_HOST_PASSWORD} ssh -v security_lab_5@gast.exnet.su "docker pull registry.gitlab.com/mirea8261545/security-lab-5-project/app:latest"
+    - sshpass -v -p ${DEPLOY_HOST_PASSWORD} ssh -v security_lab_5@gast.exnet.su "docker-compose -f /home/security_lab_5/website/App.docker-compose.yml down || yes 'OK'"
+    - sshpass -v -p ${DEPLOY_HOST_PASSWORD} ssh -v security_lab_5@gast.exnet.su "docker-compose -f /home/security_lab_5/website/App.docker-compose.yml up -d"
+  only:
+    - master

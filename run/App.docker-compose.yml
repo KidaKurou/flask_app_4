@@ -1,0 +1,110 @@
+version: '3'
+services:
+  app:
+    image: registry.gitlab.com/mirea8261545/security-lab-5-project/app:latest
+    hostname: app
+    expose:
+      - 5000 # Пробрасываем порт Flask-приложения
+    deploy:
+      replicas: 3
+    depends_on:
+      - db # Говорим, что контейнер web должен запускаться после db
+      - redis # Указываем, что веб-сервис зависит от Redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  redis:
+    image: redis/redis-stack-server:7.2.0-v10-x86_64
+    hostname: redis
+    restart: always
+    environment:
+      - CONFFILE=/etc/redis.conf
+      - REDIS_DATA_DIR=/data
+    volumes:
+      - ./configs/redis.conf:/etc/redis.conf:ro
+    ports:
+      - 6379:6379
+  db:
+    hostname: db
+    image: postgres:13 # Используем образ PostgreSQL версии 13
+    environment:
+      POSTGRES_USER: user # Логин для подключения к базе данных
+      POSTGRES_PASSWORD: password # Пароль для пользователя
+      POSTGRES_DB: flask_db # Название базы данных
+    ports:
+      - 5432:5432 # Пробрасываем порт PostgreSQL
+  # 
+  nginx:
+    image: nginx:latest # Используем образ Nginx
+    volumes:
+      - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro # Подключаем локальный файл конфигурации Nginx
+      - ./data/certbot/etc/letsencrypt/:/etc/letsencrypt/
+      - ./data/certbot/var/www/certbot/:/var/www/certbot/
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - app # Nginx зависит от Flask-приложения
+      
+  certbot:
+    image: certbot/certbot
+    # command: certbot certonly --webroot -w /var/www/certbot -d gast.exnet.su -d www.gast.exnet.su
+    volumes:
+      - ./data/certbot/etc/letsencrypt/:/etc/letsencrypt/
+      - ./data/certbot/var/www/certbot/:/var/www/certbot/
+  
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    hostname: prometheus
+    ports:
+      - 39090:9090
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./data/prometheus:/prometheus/data
+  grafana:
+    image: grafana/grafana:7.5.17
+    hostname: grafana
+    restart: always
+    environment:
+      TZ: Europe/Moscow
+      GF_SERVER_ROOT_URL: http://127.0.0.1:3000
+    ports:
+      - 3000:3000
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    links:
+      - prometheus
+  # 
+  elasticsearch:
+    image: elasticsearch:7.9.3
+    environment:
+      - discovery.type=single-node
+    ports:
+      - 9200:9200
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+  logstash:
+    image: logstash:7.9.3
+    volumes:
+      - ./configs/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    ports:
+      - 5000:5000
+  kibana:
+    image: kibana:7.9.3
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
