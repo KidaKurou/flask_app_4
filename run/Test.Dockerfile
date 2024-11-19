@@ -9,4 +9,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ../src/ .
 
-CMD ["pytest", "tests/"]
+ENV PYTHONPATH=/app/src
+
+CMD ["pytest", "tests"]

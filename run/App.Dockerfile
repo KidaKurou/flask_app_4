@@ -21,4 +21,4 @@ RUN chown -R user:user /app
 USER user
 
 # Запускаем приложение через Gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "run:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "run:app", "--timeout", "120"]

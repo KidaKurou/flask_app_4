@@ -1,20 +1,25 @@
 services:
   web:
-    image: registry.gitlab.com/mirea8261545/security-lab-5-project/test:latest
-    expose:
-      - 5000:5000
+    build:
+      context: ..
+      dockerfile: run/Test.Dockerfile
+    hostname: web
+    ports:
+      - 3000:5000
     depends_on:
       - db
       - redis
     environment:
+      - FLASK_ENV=testing
+      - TESTING=True
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
 
   redis:
-    hostname: redis
     image: redis:7-alpine
+    hostname: redis
     environment:
       - CONFFILE=/etc/redis.conf
       - REDIS_DATA_DIR=/data
@@ -22,16 +27,21 @@ services:
       - 6379:6379
     volumes:
       - ./configs/redis.conf:/etc/redis.conf:ro
+    command: ["redis-server", "/etc/redis.conf"]
     restart: unless-stopped
 
   db:
-    hostname: db
     image: postgres:13.1-alpine
+    hostname: db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: flask_db
     ports:
       - 5432:5432
+    volumes:
+      - db_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+volumes:
+  db_data:
