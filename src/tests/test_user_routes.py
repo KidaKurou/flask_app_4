@@ -10,6 +10,11 @@ def test_data_page(client):
     assert response.status_code == 200
     assert b'This is some data!' in response.data
 
+def test_cache(client):
+    response1 = client.get('/data')
+    response2 = client.get('/data')
+    assert response1.json == response2.json # Проверяем, что данные не изменились
+
 # Check cache clear
 def test_clear_cache(client):
     response = client.post('/users/cache/clear', json={'user_id': 1})
@@ -34,3 +39,7 @@ def test_user_not_found(client):
     response = client.get('/users/999')
     assert response.status_code == 404
     assert response.json == {'error': 'Not Found'}
+
+def test_404(client):
+    response = client.get('/not-found')
+    assert response.status_code == 404
