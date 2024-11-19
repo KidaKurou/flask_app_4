@@ -1,35 +1,37 @@
-version: '3'
 services:
   web:
     image: registry.gitlab.com/mirea8261545/security-lab-5-project/test:latest
     expose:
-      - 5000:5000 # Пробрасываем порт Flask-приложения
+      - 5000:5000
     depends_on:
-      - db # Говорим, что контейнер web должен запускаться после db
-      - redis # Указываем, что веб-сервис зависит от Redis
+      - db
+      - redis
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
+
   redis:
-    image: redis/redis-stack-server:7.2.0-v10-x86_64
     hostname: redis
-    restart: always
+    image: redis:7-alpine
     environment:
       - CONFFILE=/etc/redis.conf
       - REDIS_DATA_DIR=/data
-    volumes:
-      - ./configs/redis.conf:/etc/redis.conf:ro
     ports:
       - 6379:6379
+    volumes:
+      - ./configs/redis.conf:/etc/redis.conf:ro
+    restart: unless-stopped
+
   db:
     hostname: db
-    image: postgres:13 # Используем образ PostgreSQL версии 13
+    image: postgres:13.1-alpine
     environment:
-      POSTGRES_USER: user # Логин для подключения к базе данных
-      POSTGRES_PASSWORD: password # Пароль для пользователя
-      POSTGRES_DB: flask_db # Название базы данных
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flask_db
     ports:
-      - 5432:5432 # Пробрасываем порт PostgreSQL
+      - 5432:5432
+    restart: unless-stopped
 
