@@ -38,5 +38,14 @@ def create_app(config_name='default'):
         # Эмуляция долгого запроса
         app.logger.info('Получен запрос к маршруту /data')
         return jsonify({'data': 'This is some data!'})
+    
+    # Root health check
+    @app.route('/health')
+    def health_check():
+        return jsonify(status='OK'), 200
+    
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({'error': 'Not Found'}), 404
 
     return app

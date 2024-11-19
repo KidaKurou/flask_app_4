@@ -1,15 +1,24 @@
 FROM python:3.9-alpine AS production
 
-RUN mkdir -p /app/src/
-RUN mkdir -p /app/log/
+# Создаем рабочий каталог
+RUN mkdir -p /app/src/ /app/log/
+
+# Добавляем пользователя
 RUN adduser -D user
 
+# Устанавливаем рабочий каталог
 WORKDIR /app/src/
-COPY src/requirements.txt requirements.txt
-RUN pip install -r requirements.txt
 
-COPY src/run.py run.py
+# Копируем зависимости
+COPY ../src/requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем приложение
+COPY ../src/ .
+
+# Передаем права на выполнение
 RUN chown -R user:user /app
 USER user
 
+# Запускаем приложение через Gunicorn
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "run:app"]
