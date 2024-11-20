@@ -28,17 +28,13 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
     
-    - name: Build Test Docker Image
+    - name: Build App Docker Image
       run: |
-        docker build -f run/App.Dockerfile -t flask_app_pract_5/app:latest .
-        docker build -f run/Test.Dockerfile -t flask_app_pract_5/test:latest .
+        docker-compose -f run/App.docker-compose.yml build
 
     - name: Run Test Container with Docker Compose
       run: |
-        docker-compose -f run/App.docker-compose.yml up --abort-on-container-exit 
-        docker-compose -f run/App.docker-compose.yml down
-        sleep 10
-        docker-compose -f run/Test.docker-compose.yml up --abort-on-container-exit
+        docker-compose -f run/Test.docker-compose.yml up --build --abort-on-container-exit
 
   build:
     name: Build and Push Docker Image
