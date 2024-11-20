@@ -31,7 +31,6 @@ jobs:
     - name: Build Test Docker Image
       run: |
         docker build -f run/Test.Dockerfile -t flask_app_pract_5/test:latest .
-        docker image tag flask_app_pract_5/test:latest
 
     - name: Run Test Container with Docker Compose
       run: |
