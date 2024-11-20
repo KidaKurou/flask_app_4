@@ -25,7 +25,8 @@ jobs:
     - name: Build App Docker Image
       run: |
         docker-compose -f run/App.docker-compose.yml up --build -d
-        docker exec -it app flask db migrate && docker exec -it app flask db upgrade
+        docker exec -it app_1 flask db migrate
+        docker exec -it app_1 flask db upgrade
         docker-compose -f run/App.docker-compose.yml down
 
     - name: Run Test Container with Docker Compose
