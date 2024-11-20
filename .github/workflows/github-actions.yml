@@ -22,12 +22,14 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y docker-compose
     
-    - name: Build App Docker Image
+    - name: Build and Run Database and Redis Containers
       run: |
-        docker-compose -f run/App.docker-compose.yml up --build -d
-        docker exec -it app_1 flask db migrate
-        docker exec -it app_1 flask db upgrade
-        docker-compose -f run/App.docker-compose.yml down
+        docker-compose -f run/App.docker-compose.yml up --build -d db redis
+    
+    - name: Run Migrations
+      run: |
+        docker-compose -f run/App.docker-compose.yml run --rm app flask db migrate
+        docker-compose -f run/App.docker-compose.yml run --rm app flask db upgrade
 
     - name: Run Test Container with Docker Compose
       run: |
