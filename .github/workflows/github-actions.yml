@@ -34,7 +34,10 @@ jobs:
 
     - name: Run Test Container with Docker Compose
       run: |
-        docker-compose -f run/Test.docker-compose.yml up --abort-on-container-exit
+        docker-compose -f run/Test.docker-compose.yml up -d db redis
+        sleep 10
+        docker-compose -f run/Test.docker-compose.yml run web flask db upgrade
+        docker-compose -f run/Test.docker-compose.yml run web pytest
 
   build:
     name: Build and Push Docker Image
