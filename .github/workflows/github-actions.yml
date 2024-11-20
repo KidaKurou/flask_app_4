@@ -6,65 +6,41 @@ on:
       - main
 
 jobs:
-  # test:
-  #   name: Test Application
-  #   runs-on: ubuntu-latest
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
 
-  #   services:
-  #     postgres:
-  #       image: postgres:15.3-alpine
-  #       env:
-  #         POSTGRES_USER: postgres
-  #         POSTGRES_PASSWORD: postgres
-  #         POSTGRES_DB: flask_db
-  #       options: >-
-  #         --health-cmd="pg_isready -U postgres" 
-  #         --health-interval=10s 
-  #         --health-timeout=5s 
-  #         --health-retries=3
-  #     redis:
-  #       image: redis:7-alpine
-  #       options: >-
-  #         --health-cmd="redis-cli ping" 
-  #         --health-interval=10s 
-  #         --health-timeout=5s 
-  #         --health-retries=3
-
-  #   steps:
-  #   - name: Checkout Code
-  #     uses: actions/checkout@v3
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
     
-  #   - name: Set up Docker Compose
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install -y docker-compose
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Set up Docker Compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose
+      
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build Test Docker Image
+      run: |
+        docker build -f run/Test.Dockerfile -t flask_app_pract_5/test:latest .
+        docker image tag flask_app_pract_5/test:latest
 
-  #   - name: Set up Python
-  #     uses: actions/setup-python@v4
-  #     with:
-  #       python-version: '3.9'
-
-  #   - name: Install Dependencies
-  #     run: |
-  #       python -m pip install --upgrade pip
-  #       pip install -r src/requirements.txt
-
-  #   - name: Run Tests
-  #     env:
-  #       POSTGRES_HOST: localhost
-  #       POSTGRES_PORT: 5432
-  #       POSTGRES_USER: postgres
-  #       POSTGRES_PASSWORD: postgres
-  #       POSTGRES_DB: flask_db
-  #       REDIS_HOST: localhost
-  #       REDIS_PORT: 6379
-  #     run: |
-  #       docker-compose -f run/Test.docker-compose.yml up --abort-on-container-exit
+    - name: Run Test Container with Docker Compose
+      run: |
+        docker-compose -f run/Test.docker-compose.yml up --abort-on-container-exit
 
   build:
-    name: Build Docker Image
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    # needs: test
+    needs: test
 
     steps:
     - name: Checkout Code
@@ -72,7 +48,7 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
-      
+
     - name: Set up Docker Compose
       run: |
         sudo apt-get update
@@ -89,8 +65,11 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: ${{ secrets.DOCKER_USERNAME }}/flask_app_pract_5
-        tags: latest
-        labels: latest
+        tags: | 
+          latest
+          v1.${{ github.run_number }}
+        labels: |
+          org.opencontainers.image.source=${{ github.repository }}
 
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v4

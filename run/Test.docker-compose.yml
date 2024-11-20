@@ -1,5 +1,6 @@
 services:
   web:
+    image: flask_app_pract_5/test:latest
     build:
       context: ..
       dockerfile: run/Test.Dockerfile
