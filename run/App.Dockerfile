@@ -10,11 +10,11 @@ RUN adduser -D user
 WORKDIR /app/src/
 
 # Копируем зависимости
-COPY ../src/requirements.txt requirements.txt
+COPY src/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем приложение
-COPY ../src/ .
+COPY ./ /app/src/
 
 # Передаем права на выполнение
 RUN chown -R user:user /app
