@@ -14,7 +14,7 @@ COPY src/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем приложение
-COPY ./ /app/src/
+COPY ../src/ .
 
 # Передаем права на выполнение
 RUN chown -R user:user /app
