@@ -23,6 +23,7 @@ def create_user():
     data = request.get_json()
     try:
         user = user_service.create_user(data)
+        cache.clear()
         return jsonify(user.to_dict()), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 400
@@ -33,11 +34,13 @@ def update_user(user_id: int):
     user = user_service.update_user(user_id, data)
     if not user:
         return jsonify({'error': 'User not found'}), 404
+    cache.clear()
     return jsonify(user.to_dict()), 200
 
 @user_bp.route('/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id: int):
     if user_service.delete_user(user_id):
+        cache.clear()
         return jsonify({'message': 'User deleted'}), 200
     return jsonify({'message': 'User not found'}), 404
 
