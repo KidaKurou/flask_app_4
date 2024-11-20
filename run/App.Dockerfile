@@ -23,5 +23,7 @@ USER user
 # Инициализируем базу данных
 RUN flask db init
 
+ENV PYTHONPATH=/app/src
+
 # Запускаем приложение через Gunicorn
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "run:app", "--timeout", "120"]
